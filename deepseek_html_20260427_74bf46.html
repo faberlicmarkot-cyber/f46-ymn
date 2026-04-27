@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Замок Умножения • Мобильная Осада</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --castle: #2d1f3d;
+      --gold: #ffc857;
+      --tower: #4a7c96;
+      --danger: #e05a47;
+      --success: #5cb85c;
+      --text: #f5e6d3;
+      --safe-bottom: env(safe-area-inset-bottom, 10px);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0f0c29 0%, #1a1a2e 40%, #16213e 100%);
+      font-family: 'Segoe UI', 'Comic Sans MS', 'Fredoka', system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      padding: 10px;
+      touch-action: manipulation;
+      overflow-x: hidden;
+    }
+
+    .game-wrapper {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Шапка */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 25px;
+      padding: 12px 18px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 200, 100, 0.3);
+    }
+    .header h1 {
+      font-size: 1.3rem;
+      color: var(--gold);
+      text-shadow: 0 2px 4px black;
+      line-height: 1.2;
+      letter-spacing: 1px;
+    }
+    .wave-badge {
+      background: #ff9f43;
+      color: #1a1a2e;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 6px 16px;
+      border-radius: 20px;
+      box-shadow: 0 4px 0 #b45f1a;
+    }
+
+    /* Полоска здоровья */
+    .hp-container {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 30px;
+      padding: 8px 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 2px solid #c49a6c;
+    }
+    .hp-icon {
+      font-size: 1.6rem;
+    }
+    .hp-bar-bg {
+      flex: 1;
+      height: 18px;
+      background: #3a2020;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid #8b6b4a;
+    }
+    .hp-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff5e5e, #ffab40);
+      transition: width 0.3s ease;
+      border-radius: 20px;
+    }
+    .hp-text {
+      color: white;
+      font-weight: bold;
+      font-size: 0.9rem;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    <!-- Игровое поле (замок) -->
+    .castle-screen {
+      background: radial-gradient(ellipse at 50% 30%, #4a3562, #1e142e);
+      border-radius: 40px;
+      padding: 20px 15px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #b4946a;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 0 10px 30px black;
+      position: relative;
+      gap: 15px;
+    }
+
+    /* Монстры */
+    .monster-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      width: 100%;
+    }
+    .monster-card {
+      background: rgba(255, 240, 210, 0.15);
+      border-radius: 25px;
+      padding: 10px 12px;
+      text-align: center;
+      backdrop-filter: blur(5px);
+      transition: all 0.2s;
+    }
+    .monster-card.defeated {
+      opacity: 0.25;
+      transform: scale(0.9);
+      filter: grayscale(0.8);
+    }
+    .monster-emoji {
+      font-size: 2.8rem;
+      display: block;
+      filter: drop-shadow(0 6px 4px black);
+    }
+    .monster-number {
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: #fffef0;
+      border-radius: 20px;
+      padding: 3px 16px;
+      color: #1e1e2f;
+      border: 2px solid #333;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    /* Босс */
+    .boss-zone {
+      width: 100%;
+      text-align: center;
+    }
+    .boss-emoji {
+      font-size: 4rem;
+      display: block;
+    }
+    .boss-number {
+      font-size: 2rem;
+      font-weight: 900;
+      background: white;
+      border-radius: 30px;
+      padding: 8px 25px;
+      border: 4px solid black;
+      margin: 10px auto;
+      display: inline-block;
+      color: #1a1a2e;
+    }
+    .boss-clue {
+      color: #ffde9c;
+      font-weight: 600;
+      margin: 5px 0 12px;
+      font-size: 0.95rem;
+    }
+    .boss-answers-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .boss-chip {
+      background: #e7dcc8;
+      padding: 12px 16px;
+      border-radius: 35px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border: 2px solid #4a3720;
+      transition: 0.15s;
+      box-shadow: 0 4px 0 #8b7355;
+    }
+    .boss-chip:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #8b7355;
+    }
+    .boss-chip.correct-pick {
+      background: #b9e6b0;
+      border-color: #2d6a4f;
+    }
+
+    <!-- Башни (нижняя панель) -->
+    .towers-panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 35px;
+      padding: 15px 12px;
+      backdrop-filter: blur(15px);
+    }
+    .tower-btn {
+      background: linear-gradient(180deg, #5d8aa8 0%, #2c4c64 100%);
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+      width: 60px;
+      height: 60px;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 0 #1b3140;
+      transition: all 0.1s;
+      cursor: pointer;
+      border: 2px solid #c9a55c;
+      gap: 2px;
+    }
+    .tower-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1b3140;
+    }
+    .tower-emoji {
+      font-size: 1.5rem;
+    }
+    .tower-label {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    <!-- Сообщения -->
+    .message-bubble {
+      background: #fff8e7;
+      border-radius: 25px;
+      padding: 14px 18px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #2e2e3a;
+      border: 2px dashed #c69c6d;
+      min-height: 55px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .message-bubble.error {
+      background: #ffe0d0;
+    }
+
+    <!-- Кнопка следующей волны -->
+    .next-wave-btn {
+      background: #ffb347;
+      border: none;
+      width: 100%;
+      padding: 16px;
+      border-radius: 40px;
+      font-weight: 800;
+      font-size: 1.3rem;
+      color: #2d1f00;
+      box-shadow: 0 7px 0 #b26f1a;
+      cursor: pointer;
+      transition: 0.1s;
+      letter-spacing: 1px;
+      margin-top: 5px;
+    }
+    .next-wave-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 #b26f1a;
+    }
+    .hidden {
+      display: none !important;
+    }
+
+    /* Вибрация обратной связи (без реальной вибрации, просто стиль) */
+    @media (max-width: 380px) {
+      .tower-btn {
+        width: 52px;
+        height: 52px;
+      }
+      .monster-emoji {
+        font-size: 2.4rem;
+        color: #007aff;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="game-wrapper">
+  <!-- Шапка -->
+  <div class="header">
+    <h1>🏰 Замок ×</h1>
+    <span class="wave-badge" id="waveDisplay">Волна 1</span>
+  </div>
+
+  <!-- Здоровье -->
+  <div class="hp-container">
+    <span class="hp-icon">❤️</span>
+    <div class="hp-bar-bg">
+      <div id="hpBarFill" class="hp-fill" style="width: 100%;"></div>
+    </div>
+    <span class="hp-text" id="hpPercent">100%</span>
+  </div>
+
+  <!-- Экран замка -->
+  <div class="castle-screen" id="castleScreen">
+    <!-- Обычные монстры -->
+    <div id="normalMonsters" class="monster-row"></div>
+    <!-- Босс (скрыт) -->
+    <div id="bossArea" class="boss-zone hidden">
+      <span class="boss-emoji">👾</span>
+      <div class="boss-number" id="bossNumberDisplay">36</div>
+      <p class="boss-clue">Выбери ВСЕ пары множителей!</p>
+      <div id="bossOptionsGrid" class="boss-answers-grid"></div>
+    </div>
+  </div>
+
+  <!-- Сообщение -->
+  <div class="message-bubble" id="messageBox">⚔️ Тапни по башне, чтобы атаковать!</div>
+
+  <!-- Панель башен -->
+  <div class="towers-panel" id="towersPanel"></div>
+
+  <!-- Кнопка далее -->
+  <button id="nextWaveButton" class="next-wave-btn hidden">✨ Следующая волна</button>
+</div>
+
+<script>
+  (function() {
+    // ========== СОСТОЯНИЕ ==========
+    const towersList = [2, 3, 4, 5, 6, 7, 8, 9];
+    let monsters = [];           // { number, defeated }
+    let boss = null;           // { target, correctPairs:[[a,b],...], found:[] }
+    let hp = 100;
+    let wave = 0;
+
+    // DOM
+    const normalMonstersDiv = document.getElementById('normalMonsters');
+    const bossArea = document.getElementById('bossArea');
+    const bossNumberDisplay = document.getElementById('bossNumberDisplay');
+    const bossOptionsGrid = document.getElementById('bossOptionsGrid');
+    const towersPanel = document.getElementById('towersPanel');
+    const messageBox = document.getElementById('messageBox');
+    const nextBtn = document.getElementById('nextWaveButton');
+    const hpFill = document.getElementById('hpBarFill');
+    const hpPercent = document.getElementById('hpPercent');
+    const waveDisplay = document.getElementById('waveDisplay');
+
+    // ========== УТИЛИТЫ ==========
+    function updateHP(damage = 0) {
+      hp = Math.max(0, hp - damage);
+      hpFill.style.width = hp + '%';
+      hpPercent.textContent = hp + '%';
+      if (hp <= 0) {
+        messageBox.textContent = '💔 Замок разрушен... Нажми "Обновить", чтобы начать заново.';
+        messageBox.classList.add('error');
+        disableGame();
+      }
+    }
+
+    function disableGame() {
+      document.querySelectorAll('.tower-btn, .boss-chip').forEach(el => el.style.pointerEvents = 'none');
+      nextBtn.classList.add('hidden');
+    }
+
+    function setMessage(text, isGood = true) {
+      messageBox.textContent = text;
+      messageBox.classList.toggle('error', !isGood);
+    }
+
+    // Генерация монстров (числа - произведения башен)
+    function spawnMonsters(count = 3) {
+      const resultsSet = new Set();
+      towersList.forEach(a => {
+        for (let b = 2; b <= 9; b++) resultsSet.add(a * b);
+      });
+      const candidates = [...resultsSet].filter(n => n >= 6 && n <= 81);
+      const picked = [];
+      for (let i = 0; i < count; i++) {
+        picked.push({
+          number: candidates[Math.floor(Math.random() * candidates.length)],
+          defeated: false
+        });
+      }
+      return picked;
+    }
+
+    function renderMonsters() {
+      normalMonstersDiv.innerHTML = '';
+      monsters.forEach((m, idx) => {
+        const card = document.createElement('div');
+        card.className = 'monster-card' + (m.defeated ? ' defeated' : '');
+        card.dataset.index = idx;
+        card.innerHTML = `<span class="monster-emoji">👾</span><span class="monster-number">${m.number}</span>`;
+        normalMonstersDiv.appendChild(card);
+      });
+    }
+
+    // Проверка башни
+    function isCorrectForMonster(monsterNumber, tower) {
+      return monsterNumber % tower === 0 && (monsterNumber / tower) >= 2 && (monsterNumber / tower) <= 9;
+    }
+
+    function attackWithTower(tower) {
+      if (hp <= 0) return;
+      if (boss) {
+        setMessage('⚡ Сейчас битва с боссом! Выбери пары множителей.', false);
+        return;
+      }
+      let hit = false;
+      monsters.forEach((m, i) => {
+        if (m.defeated) return;
+        if (isCorrectForMonster(m.number, tower)) {
+          m.defeated = true;
+          hit = true;
+          const other = m.number / tower;
+          setMessage(`🎯 Башня ${tower} × ${other} = ${m.number}! Попадание!`, true);
+        }
+      });
+
+      if (!hit) {
+        setMessage(`❌ Башня ${tower} не подходит. -7 здоровья.`, false);
+        updateHP(7);
+      }
+
+      renderMonsters();
+
+      // Все монстры побеждены?
+      if (monsters.every(m => m.defeated) && !boss) {
+        setMessage('🎉 Все монстры повержены! Жми "Следующая волна".', true);
+        nextBtn.classList.remove('hidden');
+      }
+    }
+
+    // БОСС
+    function generateBoss() {
+      const candidates = [24, 30, 36, 42, 48, 54, 56, 63, 64, 72];
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      const pairs = [];
+      for (let a = 2; a <= 9; a++) {
+        if (target % a === 0) {
+          const b = target / a;
+          if (b >= 2 && b <= 9) pairs.push([a, b]);
+        }
+      }
+      return { target, correctPairs: pairs, found: [] };
+    }
+
+    function startBoss() {
+      boss = generateBoss();
+      normalMonstersDiv.classList.add('hidden');
+      bossArea.classList.remove('hidden');
+      bossNumberDisplay.textContent = boss.target;
+      renderBossOptions();
+      setMessage(`👾 БОСС! Найди все пары для числа ${boss.target}`, true);
+      nextBtn.classList.add('hidden');
+    }
+
+    function renderBossOptions() {
+      const allOptions = [];
+      boss.correctPairs.forEach(p => allOptions.push({ a: p[0], b: p[1], correct: true }));
+      // Добавляем ошибочные
+      allOptions.push({ a: boss.target, b: 1, correct: false });
+      allOptions.push({ a: boss.target - 1, b: 2, correct: false });
+      allOptions.push({ a: boss.target + 1, b: 2, correct: false });
+      allOptions.sort(() => Math.random() - 0.5);
+
+      bossOptionsGrid.innerHTML = '';
+      allOptions.forEach(opt => {
+        const chip = document.createElement('div');
+        chip.className = 'boss-chip';
+        chip.textContent = `${opt.a} × ${opt.b}`;
+        chip.addEventListener('click', () => {
+          if (hp <= 0) return;
+          if (boss.found.some(f => f.a === opt.a && f.b === opt.b)) return;
+          if (opt.correct) {
+            boss.found.push(opt);
+            chip.classList.add('correct-pick');
+            if (boss.found.length === boss.correctPairs.length) {
+              setMessage('🏆 Босс побеждён! Отличная работа!', true);
+              boss = null;
+              bossArea.classList.add('hidden');
+              normalMonstersDiv.classList.remove('hidden');
+              nextBtn.classList.remove('hidden');
+            } else {
+              setMessage(`✅ Верно! Осталось найти ещё ${boss.correctPairs.length - boss.found.length}`, true);
+            }
+          } else {
+            setMessage(`❌ ${opt.a}×${opt.b} ≠ ${boss.target}. -12 здоровья.`, false);
+            updateHP(12);
+            chip.style.opacity = '0.4';
+          }
+        });
+        bossOptionsGrid.appendChild(chip);
+      });
+    }
+
+    // Постройка башен
+    function buildTowers() {
+      towersPanel.innerHTML = '';
+      towersList.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'tower-btn';
+        btn.innerHTML = `<span class="tower-emoji">🗼</span><span class="tower-label">×${t}</span>`;
+        btn.addEventListener('click', () => attackWithTower(t));
+        towersPanel.appendChild(btn);
+      });
+    }
+
+    // Следующая волна
+    function goNextWave() {
+      if (hp <= 0) return;
+      wave++;
+      waveDisplay.textContent = `Волна ${wave}`;
+
+      if (wave % 3 === 0) {
+        // Босс-волна
+        monsters = [];
+        normalMonstersDiv.innerHTML = '';
+        startBoss();
+      } else {
+        boss = null;
+        bossArea.classList.add('hidden');
+        normalMonstersDiv.classList.remove('hidden');
+        monsters = spawnMonsters(2 + Math.floor(wave / 2));
+        renderMonsters();
+        setMessage(`⚔️ Волна ${wave}: уничтожь монстров!`, true);
+      }
+      nextBtn.classList.add('hidden');
+    }
+
+    // Инициализация
+    function init() {
+      hp = 100;
+      wave = 0;
+      boss = null;
+      updateHP(0);
+      buildTowers();
+      nextBtn.addEventListener('click', goNextWave);
+      goNextWave();
+    }
+
+    init();
+  })();
+</script>
+</body>
+</html>
